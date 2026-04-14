@@ -1,291 +1,110 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Premium Put Scanner — Live Results</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0a0e14; --bg2: #111720; --bg3: #1a2232;
-    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
-    --text: #e8edf5; --muted: #6b7a94;
-    --accent: #00d4a0; --accent2: #0098ff; --warn: #f5a623; --danger: #ff5c5c;
-    --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
-  body::before { content:''; position:fixed; inset:0; background-image: linear-gradient(rgba(0,212,160,0.03) 1px,transparent 1px), linear-gradient(90deg,rgba(0,212,160,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
-  .container { max-width:1320px; margin:0 auto; padding:0 24px; position:relative; z-index:1; }
-  header { border-bottom:1px solid var(--border); padding:20px 0; margin-bottom:32px; }
-  .header-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
-  .logo { display:flex; align-items:center; gap:12px; }
-  .logo-mark { width:36px; height:36px; border:1.5px solid var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:13px; color:var(--accent); font-weight:500; }
-  .logo-text { font-size:16px; font-weight:600; letter-spacing:-0.3px; }
-  .logo-sub { font-size:12px; color:var(--muted); font-family:var(--mono); }
-  .status-bar { display:flex; align-items:center; gap:20px; font-family:var(--mono); font-size:12px; color:var(--muted); flex-wrap:wrap; }
-  .status-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--accent); margin-right:6px; animation:pulse 2s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .badge { background:rgba(0,212,160,0.1); border:1px solid rgba(0,212,160,0.25); color:var(--accent); font-size:11px; font-family:var(--mono); padding:3px 10px; border-radius:4px; }
-  .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:28px; }
-  .metric-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px 20px; }
-  .metric-label { font-size:11px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
-  .metric-value { font-size:26px; font-weight:600; font-family:var(--mono); letter-spacing:-1px; line-height:1; }
-  .metric-value.green { color:var(--accent); } .metric-value.blue { color:var(--accent2); } .metric-value.warn { color:var(--warn); }
-  .metric-sub { font-size:11px; color:var(--muted); margin-top:4px; font-family:var(--mono); }
-  .formula-strip { background:rgba(0,152,255,0.07); border:1px solid rgba(0,152,255,0.18); border-radius:8px; padding:10px 16px; margin-bottom:20px; font-family:var(--mono); font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  .formula-strip span { color:var(--accent2); font-weight:500; }
-  .filter-bar { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:20px; display:flex; flex-wrap:wrap; gap:20px; align-items:flex-end; }
-  .filter-group { display:flex; flex-direction:column; gap:6px; min-width:130px; }
-  .filter-label { font-size:11px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; letter-spacing:0.07em; }
-  .filter-row { display:flex; align-items:center; gap:8px; }
-  input[type=range] { -webkit-appearance:none; appearance:none; width:110px; height:3px; background:var(--bg3); border-radius:2px; outline:none; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--accent); cursor:pointer; border:2px solid var(--bg); }
-  .filter-val { font-family:var(--mono); font-size:13px; color:var(--accent); min-width:44px; font-weight:500; }
-  .scan-btn { background:var(--accent); color:var(--bg); border:none; border-radius:8px; padding:9px 22px; font-family:var(--sans); font-weight:600; font-size:13px; cursor:pointer; transition:opacity 0.15s,transform 0.1s; white-space:nowrap; margin-left:auto; }
-  .scan-btn:hover { opacity:0.88; } .scan-btn:active { transform:scale(0.97); }
-  .table-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-  .table-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
-  .table-title { font-size:13px; font-weight:500; color:var(--text); font-family:var(--mono); }
-  .table-meta { font-size:11px; color:var(--muted); font-family:var(--mono); }
-  .scroll-x { overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  thead th { padding:10px 14px; text-align:right; font-family:var(--mono); font-size:11px; color:var(--muted); font-weight:400; text-transform:uppercase; letter-spacing:0.07em; border-bottom:1px solid var(--border); white-space:nowrap; cursor:pointer; user-select:none; transition:color 0.15s; }
-  thead th:first-child, thead th:nth-child(2) { text-align:left; }
-  thead th:hover { color:var(--text); } thead th.sorted { color:var(--accent); }
-  tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; animation:fadeIn 0.3s ease both; }
-  tbody tr:last-child { border-bottom:none; } tbody tr:hover { background:rgba(255,255,255,0.03); }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-  td { padding:11px 14px; text-align:right; font-family:var(--mono); white-space:nowrap; }
-  td:first-child, td:nth-child(2) { text-align:left; }
-  .ticker-chip { background:var(--bg3); border:1px solid var(--border2); border-radius:5px; padding:2px 8px; font-weight:500; font-size:12px; letter-spacing:0.05em; }
-  .aroc-high { color:var(--accent); font-weight:500; } .aroc-mid { color:var(--warn); } .aroc-low { color:var(--muted); }
-  .earn-yes { background:rgba(255,92,92,0.12); color:var(--danger); border:1px solid rgba(255,92,92,0.25); border-radius:4px; padding:1px 7px; font-size:10px; }
-  .earn-no { color:var(--muted); font-size:11px; }
-  .progress-bar-wrap { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
-  .progress-bar { width:56px; height:4px; background:var(--bg3); border-radius:2px; overflow:hidden; }
-  .progress-bar-fill { height:100%; border-radius:2px; }
-  .positive { color:var(--accent); }
-  footer { margin-top:40px; padding:24px 0 40px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-  .footer-note { font-size:11px; color:var(--muted); font-family:var(--mono); max-width:700px; line-height:1.7; }
-  .live-badge { background:rgba(0,212,160,0.1); border:1px solid rgba(0,212,160,0.3); color:var(--accent); font-size:11px; font-family:var(--mono); padding:5px 12px; border-radius:5px; }
-  @media(max-width:640px) { .scan-btn{margin-left:0;width:100%;} .metrics{grid-template-columns:1fr 1fr;} }
-</style>
-</head>
-<body>
-<div class="container">
-  <header>
-    <div class="header-inner">
-      <div class="logo">
-        <div class="logo-mark">PS</div>
-        <div>
-          <div class="logo-text">Premium Put Scanner</div>
-          <div class="logo-sub">Income generation · ≤30 DTE · Ranked by annualised return on capital</div>
-        </div>
-      </div>
-      <div class="status-bar">
-        <span><span class="status-dot"></span>Live data</span>
-        <span>Scanned: 08 Apr 2026 · 11:46 ET</span>
-        <span>29 tickers · 20 qualifying contracts</span>
-        <span class="badge">REAL MARKET DATA</span>
-      </div>
-    </div>
-  </header>
 
-  <div class="metrics">
-    <div class="metric-card"><div class="metric-label">Tickers scanned</div><div class="metric-value blue">29</div><div class="metric-sub">from watchlist</div></div>
-    <div class="metric-card"><div class="metric-label">Qualifying contracts</div><div class="metric-value green" id="m-contracts">20</div><div class="metric-sub">pass all filters</div></div>
-    <div class="metric-card"><div class="metric-label">Top AROC</div><div class="metric-value green" id="m-toparoc">65.7%</div><div class="metric-sub">GS · 9 DTE</div></div>
-    <div class="metric-card"><div class="metric-label">Avg cash / contract</div><div class="metric-value warn" id="m-avgcash">$734</div><div class="metric-sub">mid premium × 100</div></div>
-    <div class="metric-card"><div class="metric-label">Earnings flags</div><div class="metric-value green" id="m-earn">0</div><div class="metric-sub">in top 20 — clear</div></div>
-    <div class="metric-card"><div class="metric-label">Avg IV</div><div class="metric-value warn" id="m-iv">41.8%</div><div class="metric-sub">elevated = rich premiums</div></div>
-  </div>
+Premium Put Scanner
+Income generation · ≤30 DTE · Ranked by annualised return on capital
+Live data
+Scanned: 14 Apr 2026 · 11:27 ET
+29 tickers · 20 qualifying contracts
+REAL MARKET DATA
+Tickers scanned
+29
+from watchlist
+Qualifying contracts
+20
+pass all filters
+Top AROC
+64.1%
+META · 17 DTE
+Avg cash / contract
+$956
+mid premium × 100
+Earnings flags
+0
+in top 20 — clear
+Avg IV
+45.2%
+elevated = rich premiums
+Ranking formula:
+AROC % = ( Premium ÷ Strike ) × ( 365 ÷ DTE ) × 100
+Higher = more income per dollar of capital at risk, annualised
+Min DTE
 
-  <div class="formula-strip">
-    <span style="color:var(--muted)">Ranking formula:</span>
-    <span>AROC % = ( Premium ÷ Strike ) × ( 365 ÷ DTE ) × 100</span>
-    <span style="color:var(--muted);margin-left:8px;">Higher = more income per dollar of capital at risk, annualised</span>
-  </div>
+7d
+Max DTE
 
-  <div class="filter-bar">
-    <div class="filter-group">
-      <div class="filter-label">Min DTE</div>
-      <div class="filter-row"><input type="range" min="3" max="20" step="1" value="7" id="f-mindte" oninput="applyFilters()"><span class="filter-val" id="f-mindte-v">7d</span></div>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Max DTE</div>
-      <div class="filter-row"><input type="range" min="7" max="30" step="1" value="30" id="f-maxdte" oninput="applyFilters()"><span class="filter-val" id="f-maxdte-v">30d</span></div>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Min AROC %</div>
-      <div class="filter-row"><input type="range" min="5" max="70" step="5" value="15" id="f-minaroc" oninput="applyFilters()"><span class="filter-val" id="f-minaroc-v">15%</span></div>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Max capital / contract</div>
-      <div class="filter-row"><input type="range" min="5000" max="90000" step="5000" value="90000" id="f-capital" oninput="applyFilters()"><span class="filter-val" id="f-capital-v">Any</span></div>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Hide earnings risk</div>
-      <div class="filter-row" style="height:28px;align-items:center;">
-        <input type="checkbox" id="f-noearnings" onchange="applyFilters()" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
-        <span style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:6px;">Exclude</span>
-      </div>
-    </div>
-    <button class="scan-btn" onclick="applyFilters()">Apply filters ↻</button>
-  </div>
+30d
+Min AROC %
 
-  <div class="table-wrap">
-    <div class="table-header">
-      <span class="table-title" id="table-title">Top 20 puts · ranked by AROC · 08 Apr 2026</span>
-      <span class="table-meta">Click any column header to sort · Real data from live options chains</span>
-    </div>
-    <div class="scroll-x">
-      <table>
-        <thead>
-          <tr>
-            <th onclick="sortBy('rank')">#</th>
-            <th onclick="sortBy('ticker')">Ticker <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('stockPrice')">Stock price <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('strike')">Strike <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('moneyness')">Moneyness <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('expiry')">Expiry <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('dte')">DTE <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('premium')">Mid premium <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('iv')">IV % <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('cashPerContract')">Cash / contract <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('capitalAtRisk')">Capital at risk <span style="opacity:0.4">↕</span></th>
-            <th onclick="sortBy('aroc')" class="sorted">AROC % <span style="opacity:1">↓</span></th>
-            <th onclick="sortBy('earnings')">Earnings risk <span style="opacity:0.4">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="results-body"></tbody>
-      </table>
-    </div>
-  </div>
+15%
+Max capital / contract
 
-  <footer>
-    <div class="footer-note">
-      Data source: live options chains via yfinance · Scanned 08 Apr 2026 11:46 ET · 29 tickers · 20 qualifying contracts.<br>
-      AROC = Annualised Return on Capital = (Mid Premium ÷ Strike) × (365 ÷ DTE) × 100. Capital at risk = Strike × 100 (cash-secured put collateral per contract).<br>
-      For informational purposes only. Not financial advice. Always conduct your own due diligence before trading.
-    </div>
-    <div class="live-badge"><span class="status-dot"></span>Real market data · 08 Apr 2026</div>
-  </footer>
-</div>
+Any
+Hide earnings risk
 
-<script>
-const DATA = [
-  {rank:1, ticker:"GS",   stockPrice:898.43, strike:870,  expiry:"Apr 17", dte:9,  premium:14.10, iv:47.6, moneyness:96.8, earnings:false},
-  {rank:2, ticker:"GS",   stockPrice:898.43, strike:865,  expiry:"Apr 17", dte:9,  premium:12.85, iv:48.5, moneyness:96.3, earnings:false},
-  {rank:3, ticker:"BAC",  stockPrice:51.61,  strike:50,   expiry:"Apr 17", dte:9,  premium:0.66,  iv:39.4, moneyness:96.9, earnings:false},
-  {rank:4, ticker:"GS",   stockPrice:898.43, strike:860,  expiry:"Apr 17", dte:9,  premium:11.12, iv:47.2, moneyness:95.7, earnings:false},
-  {rank:5, ticker:"UNH",  stockPrice:305.32, strike:295,  expiry:"Apr 24", dte:16, premium:6.58,  iv:43.8, moneyness:96.6, earnings:false},
-  {rank:6, ticker:"META", stockPrice:595.47, strike:575,  expiry:"May 1",  dte:23, premium:18.12, iv:45.6, moneyness:96.6, earnings:false},
-  {rank:7, ticker:"GS",   stockPrice:898.43, strike:855,  expiry:"Apr 17", dte:9,  premium:10.10, iv:48.2, moneyness:95.2, earnings:false},
-  {rank:8, ticker:"META", stockPrice:595.47, strike:570,  expiry:"May 1",  dte:23, premium:16.40, iv:46.0, moneyness:95.7, earnings:false},
-  {rank:9, ticker:"BAC",  stockPrice:51.61,  strike:49.5, expiry:"Apr 17", dte:9,  premium:0.54,  iv:40.4, moneyness:95.9, earnings:false},
-  {rank:10,ticker:"META", stockPrice:595.47, strike:575,  expiry:"Apr 17", dte:9,  premium:6.12,  iv:36.5, moneyness:96.6, earnings:false},
-  {rank:11,ticker:"JPM",  stockPrice:306.38, strike:295,  expiry:"Apr 17", dte:9,  premium:3.04,  iv:37.9, moneyness:96.3, earnings:false},
-  {rank:12,ticker:"META", stockPrice:595.47, strike:575,  expiry:"Apr 15", dte:7,  premium:4.60,  iv:35.8, moneyness:96.6, earnings:false},
-  {rank:13,ticker:"XOM",  stockPrice:154.87, strike:150,  expiry:"Apr 17", dte:9,  premium:1.54,  iv:34.9, moneyness:96.9, earnings:false},
-  {rank:14,ticker:"META", stockPrice:595.47, strike:565,  expiry:"May 1",  dte:23, premium:14.77, iv:46.4, moneyness:94.9, earnings:false},
-  {rank:15,ticker:"PEP",  stockPrice:153.57, strike:148,  expiry:"Apr 17", dte:9,  premium:1.50,  iv:37.5, moneyness:96.4, earnings:false},
-  {rank:16,ticker:"NVDA", stockPrice:181.82, strike:175,  expiry:"Apr 17", dte:9,  premium:1.77,  iv:37.1, moneyness:96.2, earnings:false},
-  {rank:17,ticker:"META", stockPrice:595.47, strike:570,  expiry:"May 8",  dte:30, premium:19.12, iv:44.9, moneyness:95.7, earnings:false},
-  {rank:18,ticker:"AMZN", stockPrice:221.29, strike:210,  expiry:"May 1",  dte:23, premium:5.35,  iv:45.9, moneyness:94.9, earnings:false},
-  {rank:19,ticker:"GS",   stockPrice:898.43, strike:850,  expiry:"Apr 17", dte:9,  premium:8.40,  iv:45.9, moneyness:94.6, earnings:false},
-  {rank:20,ticker:"NVDA", stockPrice:181.82, strike:175,  expiry:"Apr 15", dte:7,  premium:1.33,  iv:36.4, moneyness:96.2, earnings:false},
-];
-
-const allData = DATA.map(d => ({
-  ...d,
-  aroc: parseFloat(((d.premium / d.strike) * (365 / d.dte) * 100).toFixed(1)),
-  cashPerContract: d.premium * 100,
-  capitalAtRisk: d.strike * 100,
-}));
-
-let currentSort = {key:'aroc', dir:-1};
-let currentData = [...allData];
-
-function applyFilters() {
-  const minDte   = parseInt(document.getElementById('f-mindte').value);
-  const maxDte   = parseInt(document.getElementById('f-maxdte').value);
-  const minAroc  = parseFloat(document.getElementById('f-minaroc').value);
-  const maxCap   = parseFloat(document.getElementById('f-capital').value);
-  const hideEarn = document.getElementById('f-noearnings').checked;
-
-  document.getElementById('f-mindte-v').textContent  = minDte + 'd';
-  document.getElementById('f-maxdte-v').textContent  = maxDte + 'd';
-  document.getElementById('f-minaroc-v').textContent = minAroc + '%';
-  document.getElementById('f-capital-v').textContent = maxCap >= 90000 ? 'Any' : '$' + (maxCap/1000).toFixed(0) + 'k';
-
-  currentData = allData.filter(d => {
-    if (d.dte < minDte || d.dte > maxDte) return false;
-    if (d.aroc < minAroc) return false;
-    if (d.capitalAtRisk > maxCap) return false;
-    if (hideEarn && d.earnings) return false;
-    return true;
-  });
-  updateMetrics();
-  sortAndRender();
-}
-
-function updateMetrics() {
-  const n = currentData.length;
-  document.getElementById('m-contracts').textContent = n;
-  if (!n) { document.getElementById('m-toparoc').textContent = '—'; return; }
-  document.getElementById('m-toparoc').textContent = Math.max(...currentData.map(d=>d.aroc)).toFixed(1) + '%';
-  document.getElementById('m-avgcash').textContent  = '$' + Math.round(currentData.reduce((s,d)=>s+d.cashPerContract,0)/n);
-  document.getElementById('m-earn').textContent     = currentData.filter(d=>d.earnings).length;
-  document.getElementById('m-iv').textContent       = (currentData.reduce((s,d)=>s+d.iv,0)/n).toFixed(1) + '%';
-}
-
-function sortBy(key) {
-  currentSort.dir = currentSort.key === key ? currentSort.dir * -1 : -1;
-  currentSort.key = key;
-  sortAndRender();
-}
-
-function sortAndRender() {
-  const {key, dir} = currentSort;
-  const sorted = [...currentData].sort((a,b) => {
-    let av=a[key], bv=b[key];
-    if (typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
-    return av<bv?-dir:av>bv?dir:0;
-  });
-  const maxAroc = Math.max(...sorted.map(d=>d.aroc), 1);
-  const tbody = document.getElementById('results-body');
-
-  if (!sorted.length) {
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);">No contracts match — try relaxing the filters above</td></tr>`;
-    return;
-  }
-
-  document.getElementById('table-title').textContent = `Top ${sorted.length} puts · ranked by ${key==='aroc'?'AROC':key} · 08 Apr 2026`;
-
-  tbody.innerHTML = sorted.map((d,i) => {
-    const ac = d.aroc>=50?'aroc-high':d.aroc>=30?'aroc-mid':'aroc-low';
-    const bc = d.aroc>=50?'var(--accent)':d.aroc>=30?'var(--warn)':'var(--muted)';
-    const bp = Math.min((d.aroc/maxAroc)*100,100).toFixed(1);
-    return `<tr style="animation-delay:${i*0.025}s">
-      <td style="color:var(--muted);font-size:11px">${i+1}</td>
-      <td><span class="ticker-chip">${d.ticker}</span></td>
-      <td>$${d.stockPrice.toFixed(2)}</td>
-      <td>$${d.strike}</td>
-      <td style="color:var(--muted)">${d.moneyness.toFixed(1)}%</td>
-      <td style="color:var(--muted)">${d.expiry}</td>
-      <td>${d.dte}d</td>
-      <td>$${d.premium.toFixed(2)}</td>
-      <td>${d.iv.toFixed(1)}%</td>
-      <td class="positive">$${d.cashPerContract.toFixed(0)}</td>
-      <td style="color:var(--muted)">$${d.capitalAtRisk.toLocaleString()}</td>
-      <td><div class="progress-bar-wrap"><span class="${ac}">${d.aroc.toFixed(1)}%</span><div class="progress-bar"><div class="progress-bar-fill" style="width:${bp}%;background:${bc}"></div></div></div></td>
-      <td>${d.earnings?'<span class="earn-yes">EARNINGS</span>':'<span class="earn-no">—</span>'}</td>
-    </tr>`;
-  }).join('');
-}
-
-applyFilters();
-</script>
-</body>
-</html>
+Exclude
+Apply filters ↻
+Top 20 puts · ranked by AROC · 14 Apr 2026
+Click any column header to sort · Real data from live options chains
+1	META	$661.03	$640	96.8%	May 1	17d	$19.12	49.8%	$1912	$64,000	
+64.1%
+—
+2	AMZN	$247.67	$240	96.9%	May 1	17d	$6.90	48.4%	$690	$24,000	
+61.7%
+—
+3	UNH	$317.95	$305	95.9%	Apr 24	10d	$4.93	48.1%	$493	$30,500	
+59.0%
+—
+4	META	$661.03	$635	96.1%	May 1	17d	$17.33	50.5%	$1733	$63,500	
+58.6%
+—
+5	MSFT	$391.79	$380	97.0%	May 1	17d	$9.40	43.0%	$940	$38,000	
+53.1%
+—
+6	META	$661.03	$630	95.3%	May 1	17d	$15.43	49.9%	$1543	$63,000	
+52.6%
+—
+7	GOOGL	$331.16	$320	96.6%	May 1	17d	$7.67	43.7%	$767	$32,000	
+51.5%
+—
+8	META	$661.03	$625	94.5%	May 1	17d	$13.95	50.7%	$1395	$62,500	
+47.9%
+—
+9	AMZN	$247.67	$235	94.9%	May 1	17d	$5.17	48.8%	$517	$23,500	
+47.2%
+—
+10	UNH	$317.95	$300	94.4%	Apr 24	10d	$3.77	49.2%	$377	$30,000	
+45.9%
+—
+11	MSFT	$391.79	$375	95.7%	May 1	17d	$7.72	43.5%	$772	$37,500	
+44.2%
+—
+12	META	$661.03	$630	95.3%	May 8	24d	$17.85	46.6%	$1785	$63,000	
+43.1%
+—
+13	META	$661.03	$620	93.8%	May 1	17d	$12.35	50.2%	$1235	$62,000	
+42.8%
+—
+14	MSFT	$391.79	$380	97.0%	May 8	24d	$10.55	39.6%	$1055	$38,000	
+42.2%
+—
+15	META	$661.03	$640	96.8%	Apr 24	10d	$7.35	35.6%	$735	$64,000	
+41.9%
+—
+16	GOOGL	$331.16	$320	96.6%	May 8	24d	$8.82	41.0%	$882	$32,000	
+41.9%
+—
+17	GOOGL	$331.16	$315	95.1%	May 1	17d	$6.03	44.7%	$603	$31,500	
+41.1%
+—
+18	GOOGL	$331.16	$320	96.6%	Apr 24	10d	$3.53	35.9%	$353	$32,000	
+40.3%
+—
+19	NVDA	$193.65	$187.5	96.8%	Apr 24	10d	$2.03	33.8%	$203	$18,750	
+39.5%
+—
+20	META	$661.03	$615	93.0%	May 1	17d	$11.25	50.6%	$1125	$61,500	
+39.3%
+—
+Data source: live options chains via yfinance · Scanned 14 Apr 2026 11:27 ET · 29 tickers · 20 qualifying contracts.
+AROC = Annualised Return on Capital = (Mid Premium ÷ Strike) × (365 ÷ DTE) × 100. Capital at risk = Strike × 100 (cash-secured put collateral per contract).
+For informational purposes only. Not financial advice. Always conduct your own due diligence before trading.
+Real market data · 14 Apr 2026
